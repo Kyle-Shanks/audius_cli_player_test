@@ -9,6 +9,8 @@ import (
 	"app1/queue"
 	"app1/search"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -27,92 +29,72 @@ type App struct {
 	/* Current view that the app is displaying */
 	view appView
 	/* Now playing view */
-	player *player.Player
+	player player.Player
 	/* Home view of the app */
 	homeView home.HomeView
 	/* Queue view of the app */
 	queueView queue.QueueView
 	/* Search view of the app */
 	searchView search.SearchView
-	/* Test error */
-	err error
+
+	/* App key map */
+	keyMap KeyMap
+	/* App help text component */
+	help help.Model
 }
 
 /* Create and initialize a new instance of the App */
 func NewApp() App {
+
+	h := help.New()
+	h.Styles.ShortDesc = h.Styles.ShortDesc.Foreground(lipgloss.Color("#555"))
+	h.Styles.FullDesc = h.Styles.FullDesc.Foreground(lipgloss.Color("#555"))
+	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(lipgloss.Color("#777"))
+	h.Styles.FullKey = h.Styles.FullKey.Foreground(lipgloss.Color("#777"))
+
 	app := App{
+		view:       homeView,
 		player:     player.NewPlayer(),
 		homeView:   home.NewHomeView(),
 		queueView:  queue.NewQueueView(),
 		searchView: search.NewSearchView(),
+
+		keyMap: AppKeyMap,
+		help:   h,
 	}
 
 	return app
 }
 
-type statusMsg string
-
-type errMsg struct{ error }
-
-func (e errMsg) Error() string { return e.error.Error() }
-
-func testHTTP() tea.Msg {
-	track, err := GetTrackById("JpvZ0")
-
-	if err != nil {
-		return errMsg{err}
-	}
-
-	// entries, err := os.ReadDir(".")
-	// var fileNames []string
-	//
-	// for _, entry := range entries {
-	// 	fileNames = append(fileNames, entry.Name())
-	// }
-	//
-	// fmt.Println(entries)
-	// fmt.Println(fileNames)
-
-	n, err := GetTrackMp3("JpvZ0")
-
-	fmt.Println(n)
-
-	fmt.Printf("%q by %v", track.Title, track.User.Name)
-
-	return statusMsg(track.Title)
-}
-
 func (a App) Init() tea.Cmd {
-	// return testHTTP
-	return nil
+	// Initialize sub-models
+	return tea.Batch(
+		a.player.Init(),
+		a.homeView.Init(),
+		a.queueView.Init(),
+		a.searchView.Init(),
+	)
 }
 
 func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
-	// Process msg
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.resizeApp(msg.Width, msg.Height)
+
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
+		switch {
+		case key.Matches(msg, a.keyMap.Help):
+			a.help.ShowAll = !a.help.ShowAll
+		case key.Matches(msg, a.keyMap.Quit):
 			cmds = append(cmds, tea.Quit)
-		case "a":
-			a.player.Play("./audio/QmS6k7iWF3BnmdaQC5taJb2yhPy5grKtCvsQoWwEfM6nQp.mp3")
-			// cmds = append(cmds, player.TrackPlayMsg)
-			// a.audioPlayer.Play(os.TempDir()+"tempTrack.mp31834572435")
-		case "p":
+		case key.Matches(msg, a.keyMap.Play):
 			a.player.TogglePause()
-		case "m":
+		case key.Matches(msg, a.keyMap.Mute):
 			a.player.ToggleMute()
 		}
-	case statusMsg:
-		// fmt.Println(msg)
-	case errMsg:
-		a.err = msg
-		// fmt.Println(msg)
 	}
 
 	var updateRes tea.Model
@@ -123,20 +105,20 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		updateRes, cmd = a.homeView.Update(msg)
 		a.homeView = updateRes.(home.HomeView)
 		cmds = append(cmds, cmd)
-	case queueView:
-		updateRes, cmd = a.queueView.Update(msg)
-		a.queueView = updateRes.(queue.QueueView)
-		cmds = append(cmds, cmd)
 	case searchView:
 		updateRes, cmd = a.searchView.Update(msg)
 		a.searchView = updateRes.(search.SearchView)
 		cmds = append(cmds, cmd)
+	case queueView:
+		updateRes, cmd = a.queueView.Update(msg)
+		a.queueView = updateRes.(queue.QueueView)
+		cmds = append(cmds, cmd)
 	}
 
-	// Pass msg to now playing
-	// updateRes, cmd = a.player.Update(msg)
-	// a.player = updateRes.(*player.Player)
-	// cmds = append(cmds, cmd)
+	// Pass msg to Player
+	updateRes, cmd = a.player.Update(msg)
+	a.player = updateRes.(player.Player)
+	cmds = append(cmds, cmd)
 
 	return a, tea.Batch(cmds...)
 }
@@ -156,9 +138,18 @@ func (a App) View() string {
 	}
 
 	return lipgloss.JoinVertical(
-		lipgloss.Top,
+		lipgloss.Center,
 		mainView.View(),
 		a.player.View(),
+		a.getHelpText(),
+	)
+}
+
+func (a App) getHelpText() string {
+	helpContainerStyle := lipgloss.NewStyle().Width(100).Align(lipgloss.Left)
+
+	return helpContainerStyle.Render(
+		a.help.View(a.keyMap),
 	)
 }
 

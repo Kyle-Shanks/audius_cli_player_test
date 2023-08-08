@@ -9,6 +9,10 @@ type TestModel struct {
 }
 
 func (tm TestModel) Init() tea.Cmd {
+	// Initialize sub-models if need be
+	// return tea.Batch(
+	// 	tm.x.Init(),
+	// )
 	return nil
 }
 

@@ -19,14 +19,23 @@ const (
 type HomeView struct {
 	focus    homeFocus
 	sideList SimpleList
+	table    TracksTable
 }
 
 func NewHomeView() HomeView {
-	return HomeView{sideList: NewTestSimpleList(), focus: sideList}
+	return HomeView{
+		sideList: NewTestSimpleList(),
+		table:    NewTestTracksTable(),
+		focus:    sideList,
+	}
 }
 
 func (h HomeView) Init() tea.Cmd {
-	return nil
+	// Initialize sub-models
+	return tea.Batch(
+		h.sideList.Init(),
+		h.table.Init(),
+	)
 }
 
 func (h HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -45,12 +54,16 @@ func (h HomeView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		h.sideList = res.(SimpleList)
 	}
 
+	var res tea.Model
+	res, cmd = h.table.Update(msg)
+	h.table = res.(TracksTable)
+
 	return h, cmd
 }
 
 func (h HomeView) View() string {
 	return lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		h.sideList.View(),
+		h.table.View(),
 	)
 }
