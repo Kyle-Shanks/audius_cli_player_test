@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	containerStyle         = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).Padding(0, 4)
-	inactiveContainerStyle = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("243")).Padding(0, 4)
+	containerStyle         = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).Padding(0, 2)
+	inactiveContainerStyle = containerStyle.Copy().BorderForeground(lipgloss.Color("243"))
 )
 
 type TrackPlayMsg struct {
@@ -33,7 +33,7 @@ func NewPlayer() Player {
 		progress.WithDefaultGradient(),
 		// progress.WithSolidFill("62"),
 		progress.WithoutPercentage(),
-		progress.WithWidth(92),
+		progress.WithWidth(96),
 	)
 	prog.EmptyColor = "#3B4252"
 
@@ -103,7 +103,13 @@ func (p Player) View() string {
 			),
 		)
 	} else {
-		text = "Now Playing"
+		text = lipgloss.
+			NewStyle().
+			Foreground(lipgloss.Color("#fff")).
+			Background(lipgloss.Color("#3B4252")).
+			Bold(true).
+			Padding(0, 2).
+			Render("Now Playing")
 	}
 
 	return containerStyle.Width(100).AlignHorizontal(lipgloss.Center).Render(
@@ -113,10 +119,10 @@ func (p Player) View() string {
 			p.progress.ViewAs(p.currentPos),
 			lipgloss.JoinHorizontal(
 				lipgloss.Center,
-				lipgloss.NewStyle().Width(46).Align(lipgloss.Left).Render(
+				lipgloss.NewStyle().Width(48).Align(lipgloss.Left).Render(
 					common.GetDurationText(int(p.currentPos*float64(p.currentTrack.Duration))),
 				),
-				lipgloss.NewStyle().Width(46).Align(lipgloss.Right).Render(
+				lipgloss.NewStyle().Width(48).Align(lipgloss.Right).Render(
 					common.GetDurationText(p.currentTrack.Duration),
 				),
 			),
