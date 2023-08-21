@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -19,7 +20,7 @@ import (
 type appView = int
 
 const (
-	homeView appView = iota
+	trendingView appView = iota
 	searchView
 	queueView
 )
@@ -31,7 +32,7 @@ type App struct {
 	/* Now playing view */
 	player player.Player
 	/* Home view of the app */
-	homeView home.HomeView
+	trendingView home.TrendingTracks
 	/* Queue view of the app */
 	queueView queue.QueueView
 	/* Search view of the app */
@@ -52,12 +53,15 @@ func NewApp() App {
 	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(lipgloss.Color("#777"))
 	h.Styles.FullKey = h.Styles.FullKey.Foreground(lipgloss.Color("#777"))
 
+	tt := home.NewTrendingTracks()
+	tt.Focus()
+
 	app := App{
-		view:       homeView,
-		player:     player.NewPlayer(),
-		homeView:   home.NewHomeView(),
-		queueView:  queue.NewQueueView(),
-		searchView: search.NewSearchView(),
+		view:         trendingView,
+		player:       player.NewPlayer(),
+		trendingView: tt,
+		queueView:    queue.NewQueueView(),
+		searchView:   search.NewSearchView(),
 
 		keyMap: AppKeyMap,
 		help:   h,
@@ -70,7 +74,7 @@ func (a App) Init() tea.Cmd {
 	// Initialize sub-models
 	return tea.Batch(
 		a.player.Init(),
-		a.homeView.Init(),
+		a.trendingView.Init(),
 		a.queueView.Init(),
 		a.searchView.Init(),
 	)
@@ -80,6 +84,8 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
+	searchInputFocused := a.view == searchView && a.searchView.InputFocused()
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.resizeApp(msg.Width, msg.Height)
@@ -87,33 +93,53 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, a.keyMap.Help):
-			a.help.ShowAll = !a.help.ShowAll
+			if !searchInputFocused {
+				a.help.ShowAll = !a.help.ShowAll
+			}
 		case key.Matches(msg, a.keyMap.Quit):
 			cmds = append(cmds, tea.Quit)
-		case key.Matches(msg, a.keyMap.Play):
-			a.player.TogglePause()
-		case key.Matches(msg, a.keyMap.Mute):
-			a.player.ToggleMute()
+		case key.Matches(msg, a.keyMap.Trending):
+			if a.view != trendingView && !searchInputFocused {
+				a.view = trendingView
+				a.trendingView.Focus()
+				a.searchView.Blur()
+				return a, nil
+			}
+		case key.Matches(msg, a.keyMap.Search):
+			if a.view != searchView && !searchInputFocused {
+				a.view = searchView
+				a.trendingView.Blur()
+				a.searchView.Focus()
+				a.searchView.FocusInput()
+				return a, textinput.Blink
+			}
+		}
+
+		// Exit early if in search input
+		// TODO: Find a better way to handle this
+		if searchInputFocused {
+			updateRes, cmd := a.searchView.Update(msg)
+			a.searchView = updateRes.(search.SearchView)
+			cmds = append(cmds, cmd)
+
+			return a, tea.Batch(cmds...)
 		}
 	}
 
 	var updateRes tea.Model
 
-	// Pass msg to active view
-	switch a.view {
-	case homeView:
-		updateRes, cmd = a.homeView.Update(msg)
-		a.homeView = updateRes.(home.HomeView)
-		cmds = append(cmds, cmd)
-	case searchView:
-		updateRes, cmd = a.searchView.Update(msg)
-		a.searchView = updateRes.(search.SearchView)
-		cmds = append(cmds, cmd)
-	case queueView:
-		updateRes, cmd = a.queueView.Update(msg)
-		a.queueView = updateRes.(queue.QueueView)
-		cmds = append(cmds, cmd)
-	}
+	// Pass msg to views
+	updateRes, cmd = a.trendingView.Update(msg)
+	a.trendingView = updateRes.(home.TrendingTracks)
+	cmds = append(cmds, cmd)
+
+	updateRes, cmd = a.searchView.Update(msg)
+	a.searchView = updateRes.(search.SearchView)
+	cmds = append(cmds, cmd)
+
+	updateRes, cmd = a.queueView.Update(msg)
+	a.queueView = updateRes.(queue.QueueView)
+	cmds = append(cmds, cmd)
 
 	// Pass msg to Player
 	updateRes, cmd = a.player.Update(msg)
@@ -127,14 +153,14 @@ func (a App) View() string {
 	var mainView tea.Model
 
 	switch a.view {
-	case homeView:
-		mainView = a.homeView
+	case trendingView:
+		mainView = a.trendingView
 	case queueView:
 		mainView = a.queueView
 	case searchView:
 		mainView = a.searchView
 	default:
-		mainView = a.homeView
+		mainView = a.trendingView
 	}
 
 	return lipgloss.JoinVertical(
@@ -147,10 +173,19 @@ func (a App) View() string {
 
 func (a App) getHelpText() string {
 	helpContainerStyle := lipgloss.NewStyle().Width(100).Align(lipgloss.Left)
+	// return helpContainerStyle.Render(
+	// 	a.help.View(a.keyMap),
+	// )
 
-	return helpContainerStyle.Render(
-		a.help.View(a.keyMap),
-	)
+	if a.help.ShowAll {
+		return helpContainerStyle.Render(
+			a.help.FullHelpView(append(a.player.KeyMap.FullHelp(), a.keyMap.FullHelp()...)),
+		)
+	} else {
+		return helpContainerStyle.Render(
+			a.help.ShortHelpView(a.keyMap.ShortHelp()),
+		)
+	}
 }
 
 // Run when a window size message is received

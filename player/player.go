@@ -6,26 +6,33 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 var (
-	containerStyle         = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).Padding(0, 2)
+	containerStyle         = common.BorderContainer().Padding(0, 2)
 	inactiveContainerStyle = containerStyle.Copy().BorderForeground(lipgloss.Color("243"))
 )
 
-type TrackPlayMsg struct {
-	trackName  string
-	artistName string
+type FetchTrackMp3ResMsg struct {
+	track    common.Track
+	fileName string
 }
 
 type Player struct {
 	audioPlayer  AudioPlayer
+	tracksQueue  []common.Track
+	queuePos     int
 	currentTrack common.Track
 	currentPos   float64
+	muted        bool
+	paused       bool
+	repeat       bool
 	progress     progress.Model
+	KeyMap       KeyMap
 }
 
 func NewPlayer() Player {
@@ -47,9 +54,15 @@ func NewPlayer() Player {
 
 	p := Player{
 		audioPlayer:  NewAudioPlayer(),
+		tracksQueue:  []common.Track{},
+		queuePos:     0,
 		currentTrack: common.Track{Title: ""},
 		currentPos:   0.0,
+		muted:        false,
+		paused:       false,
+		repeat:       false,
 		progress:     prog,
+		KeyMap:       PlayerKeyMap,
 	}
 
 	return p
@@ -69,17 +82,51 @@ func (p Player) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
-	case common.PlayTrackMsg:
-		p.PlayTrack(msg.Track)
-
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
+		switch {
+		case key.Matches(msg, p.KeyMap.Pause):
+			p.TogglePause()
+		case key.Matches(msg, p.KeyMap.Mute):
+			p.ToggleMute()
+		case key.Matches(msg, p.KeyMap.Repeat):
+			p.ToggleRepeat()
+		// case key.Matches(msg, p.KeyMap.VolumeUp):
+		// 	fmt.Println("1")
+		// case key.Matches(msg, p.KeyMap.VolumeDown):
+		// 	fmt.Println("2")
+		// case key.Matches(msg, p.KeyMap.SkipForward):
+		// 	pos := p.audioPlayer.Streamer.Position()
+		// 	p.Seek(pos + (10 * 48000))
+		// case key.Matches(msg, p.KeyMap.SkipBack):
+		// 	pos := p.audioPlayer.Streamer.Position()
+		// 	if pos <= 10*48000 {
+		// 		p.Seek(0)
+		// 	} else {
+		// 		p.Seek(pos - (10 * 48000))
+		// 	}
+		case key.Matches(msg, p.KeyMap.Quit):
 			p.audioPlayer.DeleteTempFiles()
 		}
 
+	case common.PlayTrackMsg:
+		p.tracksQueue = []common.Track{msg.Track}
+		p.queuePos = 0
+		cmds = append(cmds, FetchAndPlayTrackCmd(p.tracksQueue[p.queuePos]))
+
+	case common.PlayTracksMsg:
+		p.tracksQueue = msg.Tracks
+		p.queuePos = msg.QueuePos
+		cmds = append(cmds, FetchAndPlayTrackCmd(p.tracksQueue[p.queuePos]))
+
+	case FetchTrackMp3ResMsg:
+		p.currentTrack = msg.track
+		p.play(msg.fileName)
+
 	case tickMsg:
 		p.UpdateProgressPos()
+		if TrackEnded {
+			cmds = append(cmds, p.handlePlaybackEnd())
+		}
 		cmds = append(cmds, tickCmd())
 	}
 
@@ -103,13 +150,29 @@ func (p Player) View() string {
 			),
 		)
 	} else {
-		text = lipgloss.
-			NewStyle().
-			Foreground(lipgloss.Color("#fff")).
-			Background(lipgloss.Color("#3B4252")).
-			Bold(true).
-			Padding(0, 2).
-			Render("Now Playing")
+		text = common.Header().Render("Now Playing")
+	}
+
+	var repeatText string
+	var pauseText string
+	var muteText string
+
+	if p.repeat {
+		repeatText = lipgloss.NewStyle().Foreground(lipgloss.Color("#77F")).Render("repeat")
+	} else {
+		repeatText = lipgloss.NewStyle().Foreground(lipgloss.Color("#777")).Render("repeat")
+	}
+
+	if p.paused {
+		pauseText = lipgloss.NewStyle().Foreground(lipgloss.Color("#7F7")).Render("pause")
+	} else {
+		pauseText = lipgloss.NewStyle().Foreground(lipgloss.Color("#777")).Render("pause")
+	}
+
+	if p.muted {
+		muteText = lipgloss.NewStyle().Foreground(lipgloss.Color("#F77")).Render("mute")
+	} else {
+		muteText = lipgloss.NewStyle().Foreground(lipgloss.Color("#777")).Render("mute")
 	}
 
 	return containerStyle.Width(100).AlignHorizontal(lipgloss.Center).Render(
@@ -119,10 +182,13 @@ func (p Player) View() string {
 			p.progress.ViewAs(p.currentPos),
 			lipgloss.JoinHorizontal(
 				lipgloss.Center,
-				lipgloss.NewStyle().Width(48).Align(lipgloss.Left).Render(
+				lipgloss.NewStyle().Width(32).Align(lipgloss.Left).Render(
 					common.GetDurationText(int(p.currentPos*float64(p.currentTrack.Duration))),
 				),
-				lipgloss.NewStyle().Width(48).Align(lipgloss.Right).Render(
+				lipgloss.NewStyle().Width(32).Align(lipgloss.Center).Foreground(lipgloss.Color("#FFF")).Render(
+					fmt.Sprintf("%v  %v  %v", repeatText, pauseText, muteText),
+				),
+				lipgloss.NewStyle().Width(32).Align(lipgloss.Right).Render(
 					common.GetDurationText(p.currentTrack.Duration),
 				),
 			),
@@ -137,48 +203,77 @@ func (p *Player) UpdateProgressPos() {
 	}
 }
 
+func (p *Player) handlePlaybackEnd() tea.Cmd {
+	TrackEnded = false
+
+	if p.repeat {
+		p.play(p.audioPlayer.CurrentTrackFileName)
+		return nil
+	} else {
+		p.audioPlayer.DeleteTempFiles()
+
+		if p.queuePos+1 < len(p.tracksQueue) {
+			p.queuePos++
+			return FetchAndPlayTrackCmd(p.tracksQueue[p.queuePos])
+		}
+
+		return nil
+	}
+}
+
+// - Player Commands -
+/* Command to fetch track mp3 and return saved mp3 filename */
+func FetchAndPlayTrackCmd(track common.Track) tea.Cmd {
+	return func() tea.Msg {
+		fileName, err := api.GetTrackMp3(track.Id)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+
+		return FetchTrackMp3ResMsg{track: track, fileName: fileName}
+	}
+}
+
 func tickCmd() tea.Cmd {
-	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
+	return tea.Tick(time.Second/2, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }
 
 // - Audio Player Methods -
-func (p *Player) PlayTrack(track common.Track) {
-	fileName, err := api.GetTrackMp3(track.Id)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	p.currentTrack = track
-
-	p.Play(fileName)
+func (p *Player) SetAudioPlayer(ap AudioPlayer) {
+	p.audioPlayer = ap
 }
 
-func (p *Player) Play(filepath string) {
-	var err error
-	_, err = p.audioPlayer.Play(filepath)
+func (p *Player) play(filepath string) {
+	p.paused = false
+	_, err := p.audioPlayer.Play(filepath, p.muted)
 
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	// trackLen := p.audioPlayer.Play(filepath)
-	// return TrackPlayMsg{trackName: }
 }
 
 func (p *Player) Pause() {
-	p.audioPlayer.Pause()
+	if p.audioPlayer.Ctrl != nil {
+		p.audioPlayer.Pause()
+		p.paused = p.audioPlayer.Ctrl.Paused
+	}
 }
 
 func (p *Player) Resume() {
-	p.audioPlayer.Resume()
+	if p.audioPlayer.Ctrl != nil {
+		p.audioPlayer.Resume()
+		p.paused = p.audioPlayer.Ctrl.Paused
+	}
 }
 
 func (p *Player) TogglePause() {
-	p.audioPlayer.TogglePause()
+	if p.audioPlayer.Ctrl != nil {
+		p.audioPlayer.TogglePause()
+		p.paused = p.audioPlayer.Ctrl.Paused
+	}
 }
 
 func (p *Player) SetVolume(vol float64) {
@@ -186,15 +281,28 @@ func (p *Player) SetVolume(vol float64) {
 }
 
 func (p *Player) Mute() {
-	p.audioPlayer.Mute()
+	if p.audioPlayer.Volume != nil {
+		p.audioPlayer.Mute()
+		p.muted = p.audioPlayer.Volume.Silent
+	}
 }
 
 func (p *Player) Unmute() {
-	p.audioPlayer.Unmute()
+	if p.audioPlayer.Volume != nil {
+		p.audioPlayer.Unmute()
+		p.muted = p.audioPlayer.Volume.Silent
+	}
 }
 
 func (p *Player) ToggleMute() {
-	p.audioPlayer.ToggleMute()
+	if p.audioPlayer.Volume != nil {
+		p.audioPlayer.ToggleMute()
+		p.muted = p.audioPlayer.Volume.Silent
+	}
+}
+
+func (p *Player) ToggleRepeat() {
+	p.repeat = !p.repeat
 }
 
 func (p *Player) Seek(pos int) {

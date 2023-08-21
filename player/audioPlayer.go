@@ -18,6 +18,9 @@ import (
 // const DefaultSampleRate = 44100
 const DefaultSampleRate = 48000
 
+// TODO: Find a cleaner way to handle this
+var TrackEnded = false
+
 func DecodeFile(filename string, file *os.File) (beep.StreamSeekCloser, beep.Format, error) {
 	switch {
 	case strings.HasSuffix(filename, ".mp3"):
@@ -38,35 +41,34 @@ type AudioPlayer struct {
 	Streamer             beep.StreamSeekCloser
 	Volume               *effects.Volume
 	sampleRate           int
-	currentTrackFileName string
+	CurrentTrackFileName string
 }
 
 func NewAudioPlayer() AudioPlayer {
 	return AudioPlayer{
 		sampleRate:           DefaultSampleRate,
-		currentTrackFileName: "",
+		CurrentTrackFileName: "",
 	}
 }
 
-func (ap AudioPlayer) OnPlaybackEnd() {
-	// fmt.Println("Playback ended")
-	ap.DeleteTempFiles()
-
-	// TODO: Handle looping and queueing the next song and stuff here
+func (ap *AudioPlayer) OnPlaybackEnd() {
+	TrackEnded = true
 }
 
 func (ap *AudioPlayer) DeleteTempFiles() {
-	if ap.currentTrackFileName != "" {
-		os.Remove(ap.currentTrackFileName)
+	if ap.CurrentTrackFileName != "" {
+		os.Remove(ap.CurrentTrackFileName)
 	}
 }
 
-func (ap *AudioPlayer) Play(filepath string) (*AudioPlayer, error) {
+func (ap *AudioPlayer) Play(filepath string, muted bool) (*AudioPlayer, error) {
 	// fmt.Println("Playing " + filepath)
 	// Delete prev temp files
-	ap.DeleteTempFiles()
+	if filepath != ap.CurrentTrackFileName {
+		ap.DeleteTempFiles()
+		ap.CurrentTrackFileName = filepath
+	}
 
-	ap.currentTrackFileName = filepath
 	file, err := os.Open(filepath)
 	if err != nil {
 		return ap, err
@@ -95,11 +97,10 @@ func (ap *AudioPlayer) Play(filepath string) (*AudioPlayer, error) {
 	ap.Volume = &effects.Volume{
 		Streamer: ap.Ctrl,
 		Base:     2,
-		Volume:   -3,
-		Silent:   false,
+		Volume:   -2,
+		Silent:   muted,
 	}
 	ap.sampleRate = int(format.SampleRate)
-	// fmt.Println(ap.sampleRate)
 
 	speaker.Play(beep.Seq(ap.Volume, beep.Callback(ap.OnPlaybackEnd)))
 

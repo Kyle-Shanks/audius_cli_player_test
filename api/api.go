@@ -111,3 +111,38 @@ func GetTrackMp3(trackId string) (string, error) {
 
 	return file.Name(), err
 }
+
+func GetSearchTracks(query string) ([]common.Track, error) {
+	// Create Request
+	path := "/tracks/search"
+	req, _ := http.NewRequest("GET", AUDIUS_API_ENDPOINT+path, nil)
+
+	// Add query params
+	q := req.URL.Query()
+	q.Add("app_name", "audius-cli")
+	q.Add("query", query)
+	req.URL.RawQuery = q.Encode()
+
+	// Add headers
+	req.Header.Set("Accept", "application/json")
+
+	// Create client and submit request
+	client := http.Client{}
+	res, err := client.Do(req)
+
+	if err != nil {
+		return []common.Track{}, err
+	}
+
+	defer res.Body.Close()
+	resBytes, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		return []common.Track{}, err
+	}
+
+	var tracksRes common.TracksApiResponse
+	err = json.Unmarshal([]byte(resBytes), &tracksRes)
+
+	return tracksRes.Data, err
+}

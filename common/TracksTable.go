@@ -9,9 +9,8 @@ import (
 )
 
 var (
-	tableContainerStyle         = lipgloss.NewStyle().Border(lipgloss.RoundedBorder())
-	tableActiveContainerStyle   = tableContainerStyle.Copy().BorderForeground(lipgloss.Color("62"))
-	tableInactiveContainerStyle = tableContainerStyle.Copy().BorderForeground(lipgloss.Color("243"))
+	tableActiveContainerStyle   = BorderContainer()
+	tableInactiveContainerStyle = BorderContainer().BorderForeground(lipgloss.Color("243"))
 )
 
 var DefaultTracksTableColumns = []table.Column{
@@ -19,6 +18,10 @@ var DefaultTracksTableColumns = []table.Column{
 	{Title: "Title", Width: 48},
 	{Title: "Artist", Width: 30},
 	{Title: "Length", Width: 11},
+}
+
+var DefaultTracksTableRows = []table.Row{
+	{"", "", "", ""},
 }
 
 type TracksTable struct {
@@ -30,15 +33,14 @@ type TracksTable struct {
 }
 
 func NewTracksTable(
-	columns []table.Column,
-	rows []table.Row,
+	tableHeight int,
 	onSelect func(track Track) tea.Cmd,
 ) TracksTable {
 	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
+		table.WithColumns(DefaultTracksTableColumns),
+		table.WithRows(DefaultTracksTableRows),
 		table.WithFocused(true),
-		table.WithHeight(8),
+		table.WithHeight(tableHeight),
 	)
 
 	s := table.DefaultStyles()
@@ -47,13 +49,10 @@ func NewTracksTable(
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(true)
-	s.Selected = s.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(true)
+	s.Selected = s.Selected.Foreground(lipgloss.Color("#FFFFFF"))
 	t.SetStyles(s)
 
-	tt := TracksTable{table: t, focused: true, onSelect: onSelect}
+	tt := TracksTable{table: t, isLoading: false, focused: false, onSelect: onSelect}
 
 	return tt
 }
@@ -71,11 +70,11 @@ func (tt TracksTable) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
+		switch key := msg.String(); key {
 		case "enter":
 			track := tt.tracks[tt.table.Cursor()]
 			cmd := tt.onSelect(track)
-			cmds = append(cmds, cmd, PlayTrackCmd(track))
+			cmds = append(cmds, cmd, PlayTracksCmd(tt.tracks, tt.table.Cursor()))
 		}
 	}
 
@@ -96,12 +95,39 @@ func (tt TracksTable) View() string {
 // ----------------------------
 // --- Tracks Table Methods ---
 // ----------------------------
+func (tt TracksTable) SetCursor(idx int) {
+	tt.table.SetCursor(idx)
+}
+
 func (tt *TracksTable) Focus() {
 	tt.focused = true
+	tt.table.Focus()
+
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		BorderBottom(true).
+		Bold(true)
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color("229")).
+		Background(lipgloss.Color("57")).
+		Bold(true)
+	tt.table.SetStyles(s)
 }
 
 func (tt *TracksTable) Blur() {
 	tt.focused = false
+	tt.table.Blur()
+
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("240")).
+		BorderBottom(true).
+		Bold(true)
+	s.Selected = s.Selected.Foreground(lipgloss.Color("#FFFFFF"))
+	tt.table.SetStyles(s)
 }
 
 func (tt *TracksTable) Focused() bool {
@@ -110,6 +136,13 @@ func (tt *TracksTable) Focused() bool {
 
 func (tt *TracksTable) SetIsLoading(val bool) {
 	tt.isLoading = val
+	if val {
+		var loadingRows = []table.Row{
+			{"", "loading...", "", ""},
+		}
+
+		tt.table.SetRows(loadingRows)
+	}
 }
 
 func (tt *TracksTable) IsLoading() bool {
@@ -127,6 +160,7 @@ func (tt *TracksTable) UpdateTracks(tracks []Track) {
 				RemoveEmojis(track.Title),
 				RemoveEmojis(track.User.Name),
 				GetLengthText(track.Duration),
+				// fmt.Sprint(track.Play_count),
 			},
 		)
 	}

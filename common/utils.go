@@ -7,7 +7,7 @@ import (
 
 func GetDurationText(len int) string {
 	hourNum := len / 3600
-	minNum := len / 60
+	minNum := int(math.Mod(float64(len), 3600) / 60)
 	secNum := math.Mod(float64(len), 60)
 	secMod := ""
 
@@ -29,7 +29,7 @@ func GetDurationText(len int) string {
 
 func GetLengthText(len int) string {
 	hourNum := len / 3600
-	minNum := len / 60
+	minNum := int(math.Mod(float64(len), 3600) / 60)
 	secNum := math.Mod(float64(len), 60)
 	secMod := ""
 

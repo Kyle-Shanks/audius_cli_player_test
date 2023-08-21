@@ -13,3 +13,17 @@ func PlayTrackCmd(track Track) tea.Cmd {
 		}
 	}
 }
+
+type PlayTracksMsg struct {
+	Tracks   []Track
+	QueuePos int
+}
+
+func PlayTracksCmd(tracks []Track, pos int) tea.Cmd {
+	return func() tea.Msg {
+		return PlayTracksMsg{
+			Tracks:   tracks,
+			QueuePos: pos,
+		}
+	}
+}
