@@ -23,7 +23,7 @@ func (k KeyMap) ShortHelp() []key.Binding {
 
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Pause, k.Mute, k.Repeat},
+		{k.Repeat, k.Pause, k.Mute},
 		// {k.SkipBack, k.SkipForward},
 	}
 }
@@ -31,7 +31,7 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 // TODO: Add Next and Prev keys
 var PlayerKeyMap = KeyMap{
 	Pause: key.NewBinding(
-		key.WithKeys("p"),
+		key.WithKeys("p", " "),
 		key.WithHelp("p", "toggle pause"),
 	),
 	SkipForward: key.NewBinding(

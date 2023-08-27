@@ -94,6 +94,11 @@ func GetTrendingTracks() ([]common.Track, error) {
 	return getTracks(path)
 }
 
+func GetUndergroundTracks() ([]common.Track, error) {
+	path := "/tracks/trending/underground"
+	return getTracks(path)
+}
+
 /* Fetch track mp3 and return file name */
 func GetTrackMp3(trackId string) (string, error) {
 	path := "/tracks/" + trackId + "/stream"

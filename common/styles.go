@@ -36,6 +36,7 @@ var header = lipgloss.
 	Foreground(White).
 	Background(EmptyColor).
 	Bold(true).
+	Align(lipgloss.Center).
 	Padding(0, 2)
 
 func Header() lipgloss.Style {

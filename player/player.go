@@ -143,10 +143,10 @@ func (p Player) View() string {
 		text = lipgloss.JoinHorizontal(
 			lipgloss.Center,
 			lipgloss.NewStyle().Bold(true).Render(
-				p.currentTrack.Title,
+				common.RemoveEmojis(p.currentTrack.Title),
 			),
 			lipgloss.NewStyle().Foreground(lipgloss.Color("#929292")).Render(
-				" - "+p.currentTrack.User.Name,
+				" - "+common.RemoveEmojis(p.currentTrack.User.Name),
 			),
 		)
 	} else {

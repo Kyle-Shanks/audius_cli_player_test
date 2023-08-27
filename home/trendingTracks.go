@@ -72,11 +72,9 @@ func (tt TrendingTracks) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (tt TrendingTracks) View() string {
-	header := common.ActiveHeader().Render("Trending Tracks")
-
 	return lipgloss.JoinVertical(
 		lipgloss.Center,
-		header,
+		// common.ActiveHeader().Render("Trending Tracks"),
 		tt.tracksTable.View(),
 	)
 }

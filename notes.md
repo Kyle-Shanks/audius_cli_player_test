@@ -5,36 +5,45 @@
     - https://charm.sh/blog/commands-in-bubbletea/
 
 ## TODO
-- Write a system to add the track Id to the filename when downloading and then only deleting all of the temp files on quit
-    - Also check to see if we have the track file before playing to skip downloading again
-- Add fetching/loading state to table and player
-- Need to create a styles file for general styles used between components
-- Add help text for commands around the app
-- Would be cool to add click events to change the track position
-- Figure out how to use goroutines properly to make the ui not freeze when fetching and playing tracks
-- 
+- Think of a clean key map for all of the things
+- Set up a logging system that works better than printing to the console
+    - Something like this: https://github.com/charmbracelet/bubbletea/blob/6b77c8fc10d43195ab29e6e09f93272623ce4e9c/logging.go
+    - or this
+    ```go
+    if len(os.Getenv("DEBUG")) > 0 {
+        f, err := tea.LogToFile("debug.log", "debug")
+        if err != nil {
+            fmt.Println("fatal:", err)
+            os.Exit(1)
+        }
+        defer f.Close()
+    }
+    ```
+- Figure out a general tracks table page component for things like trending tracks and underground tracks
 - Update the help text to display things for search and stuff
 - Add queue methods in player
+    - Just need next and prev for now
 - Update the main view names to page
 - Update the keymap system to have the player and the pages handle all of the keymapping except for quit and toggle help
 - Update the tracks table to save the column titles to dynamically get the info from the tracks
-- Need to use commands for async things
-
+- Write a system to add the track Id to the filename when downloading and then only deleting all of the temp files on quit
+    - Also check to see if we have the track file before playing to skip downloading again
 
 ## Goals
-
-- Search Page for searching tracks
-- Playlist/Album View
 - Searching for albums and playlists
+    - Need Playlist/Album View
 - Global controls and Help text
+    - Need to think of a control scheme that will be clean and intuitive
     - Top level help text for sure
     - Help text in specific places as needed
-- Queueing System
-    - Queue View to manage queue
+
+## Nice to Haves
 - User Login
     - User Favorites
     - User Playlists
     - Favoriting Tracks
-- Mouse interaactions would be cool once all of the ui is nailed down
-- 
+- Queue View and more robust and managable queue system
+- Mouse interactions would be cool once all of the ui is nailed down
+    - Things like clicking on the player progress bar to seek would be nive
+- User Search & User Profile View
 

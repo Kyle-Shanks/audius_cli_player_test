@@ -8,8 +8,9 @@ type KeyMap struct {
 	Quit key.Binding
 
 	// View keys
-	Trending key.Binding
-	Search   key.Binding
+	Trending    key.Binding
+	Underground key.Binding
+	Search      key.Binding
 
 	// Table keys
 	Up   key.Binding
@@ -61,9 +62,13 @@ var AppKeyMap = KeyMap{
 		key.WithKeys("T"),
 		key.WithHelp("T", "trending"),
 	),
+	Underground: key.NewBinding(
+		key.WithKeys("U"),
+		key.WithHelp("U", "underground"),
+	),
 	Search: key.NewBinding(
-		key.WithKeys("/"),
-		key.WithHelp("/", "search"),
+		key.WithKeys("S", "/"),
+		key.WithHelp("S", "search"),
 	),
 	Help: key.NewBinding(
 		key.WithKeys("?"),

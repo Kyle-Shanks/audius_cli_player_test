@@ -49,7 +49,7 @@ func NewTracksTable(
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(true)
-	s.Selected = s.Selected.Foreground(lipgloss.Color("#FFFFFF"))
+	s.Selected = s.Selected.Bold(false).Foreground(lipgloss.Color("#FFFFFF"))
 	t.SetStyles(s)
 
 	tt := TracksTable{table: t, isLoading: false, focused: false, onSelect: onSelect}
@@ -71,6 +71,8 @@ func (tt TracksTable) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch key := msg.String(); key {
+		case " ":
+			return tt, nil
 		case "enter":
 			track := tt.tracks[tt.table.Cursor()]
 			cmd := tt.onSelect(track)
@@ -95,7 +97,7 @@ func (tt TracksTable) View() string {
 // ----------------------------
 // --- Tracks Table Methods ---
 // ----------------------------
-func (tt TracksTable) SetCursor(idx int) {
+func (tt *TracksTable) SetCursor(idx int) {
 	tt.table.SetCursor(idx)
 }
 
@@ -126,7 +128,7 @@ func (tt *TracksTable) Blur() {
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(true)
-	s.Selected = s.Selected.Foreground(lipgloss.Color("#FFFFFF"))
+	s.Selected = s.Selected.Bold(false).Foreground(lipgloss.Color("#FFFFFF"))
 	tt.table.SetStyles(s)
 }
 

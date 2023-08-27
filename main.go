@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"app1/common"
 	"app1/home"
 	"app1/player"
 	"app1/queue"
@@ -21,6 +22,7 @@ type appView = int
 
 const (
 	trendingView appView = iota
+	undergroundView
 	searchView
 	queueView
 )
@@ -31,8 +33,10 @@ type App struct {
 	view appView
 	/* Now playing view */
 	player player.Player
-	/* Home view of the app */
+	/* Trending view of the app */
 	trendingView home.TrendingTracks
+	/* Underground view of the app */
+	undergroundView home.UndergroundTracks
 	/* Queue view of the app */
 	queueView queue.QueueView
 	/* Search view of the app */
@@ -46,26 +50,24 @@ type App struct {
 
 /* Create and initialize a new instance of the App */
 func NewApp() App {
-
 	h := help.New()
 	h.Styles.ShortDesc = h.Styles.ShortDesc.Foreground(lipgloss.Color("#555"))
 	h.Styles.FullDesc = h.Styles.FullDesc.Foreground(lipgloss.Color("#555"))
 	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(lipgloss.Color("#777"))
 	h.Styles.FullKey = h.Styles.FullKey.Foreground(lipgloss.Color("#777"))
 
-	tt := home.NewTrendingTracks()
-	tt.Focus()
-
 	app := App{
-		view:         trendingView,
-		player:       player.NewPlayer(),
-		trendingView: tt,
-		queueView:    queue.NewQueueView(),
-		searchView:   search.NewSearchView(),
+		view:            trendingView,
+		player:          player.NewPlayer(),
+		trendingView:    home.NewTrendingTracks(),
+		undergroundView: home.NewUndergroundTracks(),
+		queueView:       queue.NewQueueView(),
+		searchView:      search.NewSearchView(),
 
 		keyMap: AppKeyMap,
 		help:   h,
 	}
+	app.trendingView.Focus()
 
 	return app
 }
@@ -75,6 +77,7 @@ func (a App) Init() tea.Cmd {
 	return tea.Batch(
 		a.player.Init(),
 		a.trendingView.Init(),
+		a.undergroundView.Init(),
 		a.queueView.Init(),
 		a.searchView.Init(),
 	)
@@ -98,10 +101,19 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case key.Matches(msg, a.keyMap.Quit):
 			cmds = append(cmds, tea.Quit)
+		case key.Matches(msg, a.keyMap.Underground):
+			if a.view != undergroundView && !searchInputFocused {
+				a.view = undergroundView
+				a.undergroundView.Focus()
+				a.trendingView.Blur()
+				a.searchView.Blur()
+				return a, nil
+			}
 		case key.Matches(msg, a.keyMap.Trending):
 			if a.view != trendingView && !searchInputFocused {
 				a.view = trendingView
 				a.trendingView.Focus()
+				a.undergroundView.Blur()
 				a.searchView.Blur()
 				return a, nil
 			}
@@ -109,6 +121,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if a.view != searchView && !searchInputFocused {
 				a.view = searchView
 				a.trendingView.Blur()
+				a.undergroundView.Blur()
 				a.searchView.Focus()
 				a.searchView.FocusInput()
 				return a, textinput.Blink
@@ -133,6 +146,10 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	a.trendingView = updateRes.(home.TrendingTracks)
 	cmds = append(cmds, cmd)
 
+	updateRes, cmd = a.undergroundView.Update(msg)
+	a.undergroundView = updateRes.(home.UndergroundTracks)
+	cmds = append(cmds, cmd)
+
 	updateRes, cmd = a.searchView.Update(msg)
 	a.searchView = updateRes.(search.SearchView)
 	cmds = append(cmds, cmd)
@@ -152,19 +169,42 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a App) View() string {
 	var mainView tea.Model
 
+	trendingHeader := common.Header()
+	undergroundHeader := common.Header().MarginLeft(2)
+	searchHeader := common.Header().MarginLeft(2)
+
 	switch a.view {
 	case trendingView:
 		mainView = a.trendingView
-	case queueView:
-		mainView = a.queueView
+		trendingHeader.Foreground(lipgloss.Color("229")).Background(common.PrimaryAlt)
+	case undergroundView:
+		mainView = a.undergroundView
+		undergroundHeader.Foreground(lipgloss.Color("229")).Background(common.PrimaryAlt)
 	case searchView:
 		mainView = a.searchView
+		searchHeader.Foreground(lipgloss.Color("229")).Background(common.PrimaryAlt)
+	// case queueView:
+	// 	mainView = a.queueView
 	default:
 		mainView = a.trendingView
 	}
 
+	headerTabs := lipgloss.NewStyle().
+		Align(lipgloss.Center).
+		MarginTop(1).
+		Width(100).
+		Render(
+			lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				trendingHeader.Render("(T)rending Tracks"),
+				undergroundHeader.Render("(U)nderground Tracks"),
+				searchHeader.Render("(S)earch"),
+			),
+		)
+
 	return lipgloss.JoinVertical(
-		lipgloss.Center,
+		lipgloss.Left,
+		headerTabs,
 		mainView.View(),
 		a.player.View(),
 		a.getHelpText(),

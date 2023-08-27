@@ -74,6 +74,17 @@ func (s SearchView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
+	if s.focused {
+		if s.focus == inputFocus {
+			s.input, cmd = s.input.Update(msg)
+			cmds = append(cmds, cmd)
+		} else {
+			res, cmd := s.table.Update(msg)
+			s.table = res.(common.TracksTable)
+			cmds = append(cmds, cmd)
+		}
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if s.focused {
@@ -82,8 +93,14 @@ func (s SearchView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if s.focus == inputFocus {
 					val := s.input.Value()
 					cmds = append(cmds, fetchSearchResultsCmd(val))
+					s.FocusTable()
 					s.table.SetCursor(0)
 					s.table.SetIsLoading(true)
+				}
+			case "/":
+				if s.focus != inputFocus {
+					s.FocusInput()
+					return s, nil
 				}
 			case "tab":
 				if s.focus == inputFocus {
@@ -99,19 +116,7 @@ func (s SearchView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case searchResultsMsg:
 		tracks := msg.tracks
 		s.table.UpdateTracks(tracks)
-		s.FocusTable()
 		s.table.SetIsLoading(false)
-	}
-
-	if s.focused {
-		if s.focus == inputFocus {
-			s.input, cmd = s.input.Update(msg)
-			cmds = append(cmds, cmd)
-		} else {
-			res, cmd := s.table.Update(msg)
-			s.table = res.(common.TracksTable)
-			cmds = append(cmds, cmd)
-		}
 	}
 
 	return s, tea.Batch(cmds...)
@@ -125,9 +130,9 @@ func (s SearchView) View() string {
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
-		lipgloss.NewStyle().Width(100).Align(lipgloss.Center).Render(
-			common.Header().Render("Search"),
-		),
+		// lipgloss.NewStyle().Width(100).Align(lipgloss.Center).Render(
+		// 	common.Header().Render("Search"),
+		// ),
 		common.BorderContainer().
 			BorderForeground(lipgloss.Color(inputBorderColor)).
 			Width(100).
