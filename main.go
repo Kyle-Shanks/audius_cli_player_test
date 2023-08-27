@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"app1/api"
 	"app1/common"
-	"app1/home"
 	"app1/player"
 	"app1/queue"
 	"app1/search"
@@ -34,9 +34,9 @@ type App struct {
 	/* Now playing view */
 	player player.Player
 	/* Trending view of the app */
-	trendingView home.TrendingTracks
+	trendingView common.TracksTableView
 	/* Underground view of the app */
-	undergroundView home.UndergroundTracks
+	undergroundView common.TracksTableView
 	/* Queue view of the app */
 	queueView queue.QueueView
 	/* Search view of the app */
@@ -57,12 +57,18 @@ func NewApp() App {
 	h.Styles.FullKey = h.Styles.FullKey.Foreground(lipgloss.Color("#777"))
 
 	app := App{
-		view:            trendingView,
-		player:          player.NewPlayer(),
-		trendingView:    home.NewTrendingTracks(),
-		undergroundView: home.NewUndergroundTracks(),
-		queueView:       queue.NewQueueView(),
-		searchView:      search.NewSearchView(),
+		view:   trendingView,
+		player: player.NewPlayer(),
+		trendingView: common.NewTracksTableView(
+			"Trending Tracks",
+			api.GetTrendingTracks,
+		),
+		undergroundView: common.NewTracksTableView(
+			"Underground Tracks",
+			api.GetUndergroundTracks,
+		),
+		queueView:  queue.NewQueueView(),
+		searchView: search.NewSearchView(),
 
 		keyMap: AppKeyMap,
 		help:   h,
@@ -143,11 +149,11 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Pass msg to views
 	updateRes, cmd = a.trendingView.Update(msg)
-	a.trendingView = updateRes.(home.TrendingTracks)
+	a.trendingView = updateRes.(common.TracksTableView)
 	cmds = append(cmds, cmd)
 
 	updateRes, cmd = a.undergroundView.Update(msg)
-	a.undergroundView = updateRes.(home.UndergroundTracks)
+	a.undergroundView = updateRes.(common.TracksTableView)
 	cmds = append(cmds, cmd)
 
 	updateRes, cmd = a.searchView.Update(msg)

@@ -19,7 +19,6 @@
         defer f.Close()
     }
     ```
-- Figure out a general tracks table page component for things like trending tracks and underground tracks
 - Update the help text to display things for search and stuff
 - Add queue methods in player
     - Just need next and prev for now
