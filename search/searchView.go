@@ -86,6 +86,19 @@ func (s SearchView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case tea.MouseMsg:
+		if msg.Type == tea.MouseLeft {
+			inXBounds := msg.X >= 1 && msg.X <= 99
+			inInputYBounds := msg.Y >= 2 && msg.Y <= 4
+			inTableYBounds := msg.Y >= 5 && msg.Y <= 18
+
+			// Focus
+			if inXBounds && inInputYBounds {
+				s.FocusInput()
+			} else if inXBounds && inTableYBounds {
+				s.FocusTable()
+			}
+		}
 	case tea.KeyMsg:
 		if s.focused {
 			switch key := msg.String(); key {

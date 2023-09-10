@@ -10,6 +10,8 @@ type KeyMap struct {
 	// View keys
 	Trending    key.Binding
 	Underground key.Binding
+	Favorites   key.Binding
+	Queue       key.Binding
 	Search      key.Binding
 
 	// Table keys
@@ -65,6 +67,14 @@ var AppKeyMap = KeyMap{
 	Underground: key.NewBinding(
 		key.WithKeys("U"),
 		key.WithHelp("U", "underground"),
+	),
+	Favorites: key.NewBinding(
+		key.WithKeys("F"),
+		key.WithHelp("F", "favorites"),
+	),
+	Queue: key.NewBinding(
+		key.WithKeys("Q"),
+		key.WithHelp("Q", "queue"),
 	),
 	Search: key.NewBinding(
 		key.WithKeys("S", "/"),

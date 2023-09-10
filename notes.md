@@ -29,20 +29,25 @@
     - Also check to see if we have the track file before playing to skip downloading again
 
 ## Goals
-- Searching for albums and playlists
-    - Need Playlist/Album View
+- User Favorite Tracks
+- Way for user to save their userId for favorites
+    - Also update favorites page to display 'No User Id' if none provided
 - Global controls and Help text
     - Need to think of a control scheme that will be clean and intuitive
     - Top level help text for sure
     - Help text in specific places as needed
 
-## Nice to Haves
-- User Login
-    - User Favorites
-    - User Playlists
-    - Favoriting Tracks
+## Future Goals
+- More mouse interactions when the UI is nailed down
+- Work on sending messages out for tracking plays and stuff
+- Collection View
+- User Favorited Playlists
+- Collection Search
 - Queue View and more robust and managable queue system
-- Mouse interactions would be cool once all of the ui is nailed down
-    - Things like clicking on the player progress bar to seek would be nive
-- User Search & User Profile View
+- Shuffle
+- App resizing
+- User Login & Writes
+    - Favoriting Tracks
+- User Profile View
+- User Search
 

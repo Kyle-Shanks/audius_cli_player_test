@@ -23,6 +23,7 @@ type appView = int
 const (
 	trendingView appView = iota
 	undergroundView
+	favoritesView
 	searchView
 	queueView
 )
@@ -37,6 +38,8 @@ type App struct {
 	trendingView common.TracksTableView
 	/* Underground view of the app */
 	undergroundView common.TracksTableView
+	/* Favorites view of the app */
+	favoritesView common.TracksTableView
 	/* Queue view of the app */
 	queueView queue.QueueView
 	/* Search view of the app */
@@ -46,6 +49,10 @@ type App struct {
 	keyMap KeyMap
 	/* App help text component */
 	help help.Model
+}
+
+func getMyFavs() ([]common.Track, error) {
+	return api.GetUserFavoriteTracks("PWVbN")
 }
 
 /* Create and initialize a new instance of the App */
@@ -67,6 +74,10 @@ func NewApp() App {
 			"Underground Tracks",
 			api.GetUndergroundTracks,
 		),
+		favoritesView: common.NewTracksTableView(
+			"Favorites",
+			getMyFavs,
+		),
 		queueView:  queue.NewQueueView(),
 		searchView: search.NewSearchView(),
 
@@ -84,6 +95,7 @@ func (a App) Init() tea.Cmd {
 		a.player.Init(),
 		a.trendingView.Init(),
 		a.undergroundView.Init(),
+		a.favoritesView.Init(),
 		a.queueView.Init(),
 		a.searchView.Init(),
 	)
@@ -95,9 +107,30 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	searchInputFocused := a.view == searchView && a.searchView.InputFocused()
 
+	// TODO: Add Queue view key bind handler
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.resizeApp(msg.Width, msg.Height)
+
+	case tea.MouseMsg:
+		if msg.Type == tea.MouseLeft {
+			// log := fmt.Sprintf("x:%v, y:%v", msg.X, msg.Y)
+			// cmds = append(cmds, common.LogCmd(log))
+
+			// Switch view/tab
+			if msg.Y == 1 {
+				if msg.X >= 11 && msg.X <= 31 {
+					a.updateViewFocus(trendingView)
+				} else if msg.X >= 34 && msg.X <= 57 {
+					a.updateViewFocus(undergroundView)
+				} else if msg.X >= 60 && msg.X <= 74 {
+					a.updateViewFocus(favoritesView)
+				} else if msg.X >= 77 && msg.X <= 88 {
+					a.updateViewFocus(searchView)
+					cmds = append(cmds, textinput.Blink)
+				}
+			}
+		}
 
 	case tea.KeyMsg:
 		switch {
@@ -108,29 +141,28 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, a.keyMap.Quit):
 			cmds = append(cmds, tea.Quit)
 		case key.Matches(msg, a.keyMap.Underground):
-			if a.view != undergroundView && !searchInputFocused {
-				a.view = undergroundView
-				a.undergroundView.Focus()
-				a.trendingView.Blur()
-				a.searchView.Blur()
-				return a, nil
+			if !searchInputFocused {
+				a.updateViewFocus(undergroundView)
+				return a, tea.Batch(cmds...)
 			}
 		case key.Matches(msg, a.keyMap.Trending):
-			if a.view != trendingView && !searchInputFocused {
-				a.view = trendingView
-				a.trendingView.Focus()
-				a.undergroundView.Blur()
-				a.searchView.Blur()
-				return a, nil
+			if !searchInputFocused {
+				a.updateViewFocus(trendingView)
+				return a, tea.Batch(cmds...)
+			}
+		case key.Matches(msg, a.keyMap.Favorites):
+			if !searchInputFocused {
+				a.updateViewFocus(favoritesView)
+				return a, tea.Batch(cmds...)
 			}
 		case key.Matches(msg, a.keyMap.Search):
-			if a.view != searchView && !searchInputFocused {
-				a.view = searchView
-				a.trendingView.Blur()
-				a.undergroundView.Blur()
-				a.searchView.Focus()
-				a.searchView.FocusInput()
-				return a, textinput.Blink
+			if !searchInputFocused {
+				a.updateViewFocus(searchView)
+				if msg.String() == "/" {
+					a.searchView.FocusInput()
+				}
+				cmds = append(cmds, textinput.Blink)
+				return a, tea.Batch(cmds...)
 			}
 		}
 
@@ -156,6 +188,10 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	a.undergroundView = updateRes.(common.TracksTableView)
 	cmds = append(cmds, cmd)
 
+	updateRes, cmd = a.favoritesView.Update(msg)
+	a.favoritesView = updateRes.(common.TracksTableView)
+	cmds = append(cmds, cmd)
+
 	updateRes, cmd = a.searchView.Update(msg)
 	a.searchView = updateRes.(search.SearchView)
 	cmds = append(cmds, cmd)
@@ -175,8 +211,10 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a App) View() string {
 	var mainView tea.Model
 
-	trendingHeader := common.Header()
+	trendingHeader := common.Header().MarginLeft(1)
 	undergroundHeader := common.Header().MarginLeft(2)
+	favoritesHeader := common.Header().MarginLeft(2)
+	// queueHeader := common.Header().MarginLeft(2)
 	searchHeader := common.Header().MarginLeft(2)
 
 	switch a.view {
@@ -186,11 +224,15 @@ func (a App) View() string {
 	case undergroundView:
 		mainView = a.undergroundView
 		undergroundHeader.Foreground(lipgloss.Color("229")).Background(common.PrimaryAlt)
+	case favoritesView:
+		mainView = a.favoritesView
+		favoritesHeader.Foreground(lipgloss.Color("229")).Background(common.PrimaryAlt)
 	case searchView:
 		mainView = a.searchView
 		searchHeader.Foreground(lipgloss.Color("229")).Background(common.PrimaryAlt)
 	// case queueView:
 	// 	mainView = a.queueView
+	// 	queueHeader.Foreground(lipgloss.Color("229")).Background(common.PrimaryAlt)
 	default:
 		mainView = a.trendingView
 	}
@@ -204,6 +246,8 @@ func (a App) View() string {
 				lipgloss.Center,
 				trendingHeader.Render("(T)rending Tracks"),
 				undergroundHeader.Render("(U)nderground Tracks"),
+				favoritesHeader.Render("(F)avorites"),
+				// queueHeader.Render("(Q)ueue"),
 				searchHeader.Render("(S)earch"),
 			),
 		)
@@ -234,13 +278,39 @@ func (a App) getHelpText() string {
 	}
 }
 
+func (a *App) updateViewFocus(newView appView) {
+	if a.view != newView {
+		a.view = newView
+
+		a.trendingView.Blur()
+		a.undergroundView.Blur()
+		a.favoritesView.Blur()
+		a.searchView.Blur()
+
+		switch a.view {
+		case trendingView:
+			a.trendingView.Focus()
+		case undergroundView:
+			a.undergroundView.Focus()
+		case favoritesView:
+			a.favoritesView.Focus()
+		case searchView:
+			a.searchView.Focus()
+		}
+	}
+}
+
 // Run when a window size message is received
 func (a *App) resizeApp(width int, height int) {
 	// fmt.Println(width, height)
 }
 
 func main() {
-	program := tea.NewProgram(NewApp(), tea.WithAltScreen())
+	program := tea.NewProgram(
+		NewApp(),
+		tea.WithAltScreen(),
+		tea.WithMouseAllMotion(),
+	)
 	// TODO: Add tea.WithMouseAllMotion() later to add mouse click handling
 
 	if _, err := program.Run(); err != nil {

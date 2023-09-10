@@ -1,6 +1,11 @@
 package common
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"fmt"
+	"os"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 type PlayTrackMsg struct {
 	Track Track
@@ -25,5 +30,21 @@ func PlayTracksCmd(tracks []Track, pos int) tea.Cmd {
 			Tracks:   tracks,
 			QueuePos: pos,
 		}
+	}
+}
+
+func LogCmd(log string) tea.Cmd {
+	return func() tea.Msg {
+		f, err := tea.LogToFile("./debug.log", "debug")
+
+		if err != nil {
+			fmt.Println("fatal:", err)
+			os.Exit(1)
+		}
+
+		f.WriteString(log + "\n---\n")
+		defer f.Close()
+
+		return nil
 	}
 }

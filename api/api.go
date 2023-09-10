@@ -3,6 +3,8 @@ package api
 import (
 	"app1/common"
 	"encoding/json"
+	"strings"
+
 	// "fmt"
 	"io"
 	"net/http"
@@ -11,6 +13,10 @@ import (
 
 // const AUDIUS_API_ENDPOINT string = "https://api.audius.co/"
 const AUDIUS_API_ENDPOINT string = "https://discoveryprovider.audius.co/v1"
+
+// TODO: Switch to using the full endpoint.
+// Full endpoint has things like users/{userId}/favorites/tracks and allows for pagination
+// const AUDIUS_API_FULL_ENDPOINT string = "https://discoveryprovider.audius.co/v1/full"
 
 type HttpErrMsg struct{ error }
 
@@ -72,6 +78,20 @@ func getTracks(tracksPath string) ([]common.Track, error) {
 	return tracksRes.Data, err
 }
 
+/* Send get request and unmarshal array of track favoritess */
+func getTrackFavorites(favoritesPath string) ([]common.TrackFavorite, error) {
+	resBytes, err := get(favoritesPath)
+
+	if err != nil {
+		return []common.TrackFavorite{}, err
+	}
+
+	var trackFavoritesRes common.TrackFavoritesApiResponse
+	err = json.Unmarshal([]byte(resBytes), &trackFavoritesRes)
+
+	return trackFavoritesRes.Data, err
+}
+
 // --- Get Functions ---
 // Track Functions
 func GetTrackById(trackId string) (common.Track, error) {
@@ -82,6 +102,24 @@ func GetTrackById(trackId string) (common.Track, error) {
 func GetUserTracks(userId string) ([]common.Track, error) {
 	path := "/users/" + userId + "/tracks"
 	return getTracks(path)
+}
+
+func GetUserFavoriteTracks(userId string) ([]common.Track, error) {
+	favoritesPath := "/users/" + userId + "/favorites"
+	favorites, err := getTrackFavorites(favoritesPath)
+
+	if err != nil || len(favorites) == 0 {
+		return []common.Track{}, err
+	}
+
+	trackIds := []string{}
+	for _, fav := range favorites {
+		trackIds = append(trackIds, fav.TrackId)
+	}
+
+	tracksPath := "/tracks?id=" + strings.Join(trackIds, "&id=")
+
+	return getTracks(tracksPath)
 }
 
 func GetPlaylistTracks(playlistId string) ([]common.Track, error) {

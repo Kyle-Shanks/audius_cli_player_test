@@ -69,6 +69,19 @@ type TracksApiResponse struct {
 	Data []Track `json:"data"`
 }
 
+type TrackFavorite struct {
+	TrackId string `json:"favorite_item_id"`
+	UserId  string `json:"user_id"`
+
+	// NOTE: Unused Fields
+	// FavoriteType    string `json:"favorite_type"`
+	// CreatedAt    ImageType `json:"created_at"`
+}
+
+type TrackFavoritesApiResponse struct {
+	Data []TrackFavorite `json:"data"`
+}
+
 type Playlist struct {
 	Description            string `json:"description"`
 	Permalink              string `json:"permalink"`

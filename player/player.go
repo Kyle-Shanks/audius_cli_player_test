@@ -82,6 +82,15 @@ func (p Player) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
+	case tea.MouseMsg:
+		if msg.Type == tea.MouseLeft {
+			// Handle progress bar seeking
+			if p.audioPlayer.Streamer != nil && msg.Y == 21 && (msg.X >= 3 && msg.X <= 98) {
+				percentage := float32(msg.X-3) / 96.0
+				pos := int(float32(p.audioPlayer.Streamer.Len()) * percentage)
+				p.Seek(pos)
+			}
+		}
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, p.KeyMap.Pause):
