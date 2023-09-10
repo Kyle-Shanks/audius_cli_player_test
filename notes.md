@@ -29,16 +29,16 @@
     - Also check to see if we have the track file before playing to skip downloading again
 
 ## Goals
-- User Favorite Tracks
 - Way for user to save their userId for favorites
     - Also update favorites page to display 'No User Id' if none provided
-- Global controls and Help text
-    - Need to think of a control scheme that will be clean and intuitive
-    - Top level help text for sure
-    - Help text in specific places as needed
 
 ## Future Goals
+- Update control scheme when more pages are added
+    - Need to also update the help text to update contextually
 - More mouse interactions when the UI is nailed down
+- Update to use the full endpoint
+    - Has more sorting/filtering options and things
+    - Also can update the favorites page to sort by latest added instead of whatever its doing now
 - Work on sending messages out for tracking plays and stuff
 - Collection View
 - User Favorited Playlists

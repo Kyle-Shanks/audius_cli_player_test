@@ -19,8 +19,13 @@ type KeyMap struct {
 	Down key.Binding
 	// Left   key.Binding
 	// Right  key.Binding
-	Top    key.Binding
-	Bottom key.Binding
+
+	Top          key.Binding
+	Bottom       key.Binding
+	PageUp       key.Binding
+	PageDown     key.Binding
+	HalfPageUp   key.Binding
+	HalfPageDown key.Binding
 }
 
 func (k KeyMap) ShortHelp() []key.Binding {
@@ -30,7 +35,8 @@ func (k KeyMap) ShortHelp() []key.Binding {
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.Top, k.Bottom},
-		{k.Help, k.Quit},
+		{k.HalfPageUp, k.HalfPageDown, k.PageUp, k.PageDown},
+		{k.Search, k.Help, k.Quit},
 	}
 }
 
@@ -59,6 +65,22 @@ var AppKeyMap = KeyMap{
 		key.WithKeys("G"),
 		key.WithHelp("G", "jump to bottom"),
 	),
+	HalfPageUp: key.NewBinding(
+		key.WithKeys("u"),
+		key.WithHelp("u", "jump 1/2 page up"),
+	),
+	HalfPageDown: key.NewBinding(
+		key.WithKeys("d"),
+		key.WithHelp("d", "jump 1/2 page down"),
+	),
+	PageUp: key.NewBinding(
+		key.WithKeys("b"),
+		key.WithHelp("b", "jump page up"),
+	),
+	PageDown: key.NewBinding(
+		key.WithKeys("f"),
+		key.WithHelp("f", "jump page down"),
+	),
 
 	Trending: key.NewBinding(
 		key.WithKeys("T"),
@@ -78,7 +100,8 @@ var AppKeyMap = KeyMap{
 	),
 	Search: key.NewBinding(
 		key.WithKeys("S", "/"),
-		key.WithHelp("S", "search"),
+		// key.WithHelp("S", "search"),
+		key.WithHelp("/", "search"),
 	),
 	Help: key.NewBinding(
 		key.WithKeys("?"),

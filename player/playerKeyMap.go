@@ -15,6 +15,9 @@ type KeyMap struct {
 	SkipBack    key.Binding
 	Next        key.Binding
 	Prev        key.Binding
+
+	// Just for help text
+	Play key.Binding
 }
 
 func (k KeyMap) ShortHelp() []key.Binding {
@@ -23,13 +26,17 @@ func (k KeyMap) ShortHelp() []key.Binding {
 
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Repeat, k.Pause, k.Mute},
+		{k.Play, k.Pause, k.Repeat, k.Mute},
 		// {k.SkipBack, k.SkipForward},
 	}
 }
 
 // TODO: Add Next and Prev keys
 var PlayerKeyMap = KeyMap{
+	Play: key.NewBinding(
+		key.WithKeys("enter"),
+		key.WithHelp("enter", "play track"),
+	),
 	Pause: key.NewBinding(
 		key.WithKeys("p", " "),
 		key.WithHelp("p", "toggle pause"),

@@ -293,6 +293,8 @@ func (p *Player) Mute() {
 	if p.audioPlayer.Volume != nil {
 		p.audioPlayer.Mute()
 		p.muted = p.audioPlayer.Volume.Silent
+	} else {
+		p.muted = true
 	}
 }
 
@@ -300,6 +302,8 @@ func (p *Player) Unmute() {
 	if p.audioPlayer.Volume != nil {
 		p.audioPlayer.Unmute()
 		p.muted = p.audioPlayer.Volume.Silent
+	} else {
+		p.muted = false
 	}
 }
 
@@ -307,6 +311,8 @@ func (p *Player) ToggleMute() {
 	if p.audioPlayer.Volume != nil {
 		p.audioPlayer.ToggleMute()
 		p.muted = p.audioPlayer.Volume.Silent
+	} else {
+		p.muted = !p.muted
 	}
 }
 

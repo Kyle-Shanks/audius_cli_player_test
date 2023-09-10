@@ -262,7 +262,7 @@ func (a App) View() string {
 }
 
 func (a App) getHelpText() string {
-	helpContainerStyle := lipgloss.NewStyle().Width(100).Align(lipgloss.Left)
+	helpContainerStyle := lipgloss.NewStyle().Width(100).Align(lipgloss.Left).MarginLeft(2)
 	// return helpContainerStyle.Render(
 	// 	a.help.View(a.keyMap),
 	// )
