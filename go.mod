@@ -1,4 +1,4 @@
-module app1
+module github.com/Kyle-Shanks/audius_cli_player_test
 
 go 1.20
 
