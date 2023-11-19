@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"app1/api"
-	"app1/common"
-	"app1/player"
-	"app1/queue"
-	"app1/search"
+	"github.com/Kyle-Shanks/audius_cli_player_test/api"
+	"github.com/Kyle-Shanks/audius_cli_player_test/common"
+	"github.com/Kyle-Shanks/audius_cli_player_test/player"
+	"github.com/Kyle-Shanks/audius_cli_player_test/queue"
+	"github.com/Kyle-Shanks/audius_cli_player_test/search"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"

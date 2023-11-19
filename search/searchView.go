@@ -1,8 +1,8 @@
 package search
 
 import (
-	"app1/api"
-	"app1/common"
+	"github.com/Kyle-Shanks/audius_cli_player_test/api"
+	"github.com/Kyle-Shanks/audius_cli_player_test/common"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"

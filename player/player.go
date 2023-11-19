@@ -1,9 +1,9 @@
 package player
 
 import (
-	"app1/api"
-	"app1/common"
 	"fmt"
+	"github.com/Kyle-Shanks/audius_cli_player_test/api"
+	"github.com/Kyle-Shanks/audius_cli_player_test/common"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"

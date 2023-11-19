@@ -1,8 +1,8 @@
 package api
 
 import (
-	"app1/common"
 	"encoding/json"
+	"github.com/Kyle-Shanks/audius_cli_player_test/common"
 	"strings"
 
 	// "fmt"
