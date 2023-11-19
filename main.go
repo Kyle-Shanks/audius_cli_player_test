@@ -49,19 +49,32 @@ type App struct {
 	keyMap KeyMap
 	/* App help text component */
 	help help.Model
+
+	/* Toggle input for entering user id */
+	userIdInputVisible bool
+	userIdInput        textinput.Model
 }
 
 func getMyFavs() ([]common.Track, error) {
-	return api.GetUserFavoriteTracks("PWVbN")
+	userId, err := common.AppDataManager.GetUserId()
+	if err != nil || userId == "" {
+		return []common.Track{}, err
+	}
+
+	return api.GetUserFavoriteTracks(userId)
 }
 
 /* Create and initialize a new instance of the App */
 func NewApp() App {
 	h := help.New()
-	h.Styles.ShortDesc = h.Styles.ShortDesc.Foreground(lipgloss.Color("#555"))
-	h.Styles.FullDesc = h.Styles.FullDesc.Foreground(lipgloss.Color("#555"))
-	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(lipgloss.Color("#777"))
-	h.Styles.FullKey = h.Styles.FullKey.Foreground(lipgloss.Color("#777"))
+	h.Styles.ShortDesc = h.Styles.ShortDesc.Foreground(common.Grey2)
+	h.Styles.FullDesc = h.Styles.FullDesc.Foreground(common.Grey2)
+	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(common.Grey3)
+	h.Styles.FullKey = h.Styles.FullKey.Foreground(common.Grey3)
+
+	idInput := textinput.New()
+	idInput.Placeholder = "Enter ID"
+	idInput.Focus()
 
 	app := App{
 		view:   trendingView,
@@ -81,8 +94,10 @@ func NewApp() App {
 		queueView:  queue.NewQueueView(),
 		searchView: search.NewSearchView(),
 
-		keyMap: AppKeyMap,
-		help:   h,
+		keyMap:             AppKeyMap,
+		help:               h,
+		userIdInputVisible: false,
+		userIdInput:        idInput,
 	}
 	app.trendingView.Focus()
 
@@ -133,30 +148,54 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, a.keyMap.Help):
-			if !searchInputFocused {
-				a.help.ShowAll = !a.help.ShowAll
-			}
-		case key.Matches(msg, a.keyMap.Quit):
+		// Handle app quit
+		if key.Matches(msg, a.keyMap.Quit) {
 			cmds = append(cmds, tea.Quit)
-		case key.Matches(msg, a.keyMap.Underground):
-			if !searchInputFocused {
+		}
+
+		// Exit early if in search input
+		if searchInputFocused {
+			updateRes, cmd := a.searchView.Update(msg)
+			a.searchView = updateRes.(search.SearchView)
+			cmds = append(cmds, cmd)
+
+			return a, tea.Batch(cmds...)
+		} else if a.userIdInputVisible {
+			if msg.String() == "enter" {
+				cmds = append(cmds, common.LogCmd("Setting User ID: "+a.userIdInput.Value()))
+				common.AppDataManager.SetUserId(a.userIdInput.Value())
+				a.userIdInput.Reset()
+				a.userIdInputVisible = false
+
+				// Refetch favorites
+				cmds = append(cmds, a.favoritesView.FetchTracksCmd())
+				a.updateViewFocus(favoritesView)
+			} else if key.Matches(msg, a.keyMap.ToggleUserIdInput) {
+				a.userIdInputVisible = false
+			} else {
+				a.userIdInput, cmd = a.userIdInput.Update(msg)
+				cmds = append(cmds, cmd)
+			}
+
+			return a, tea.Batch(cmds...)
+		} else {
+			// Handle app level key bindings
+			switch {
+			case key.Matches(msg, a.keyMap.Help):
+				a.help.ShowAll = !a.help.ShowAll
+			case key.Matches(msg, a.keyMap.ToggleUserIdInput):
+				// a.help.ShowAll = !a.help.ShowAll
+				a.userIdInputVisible = true
+			case key.Matches(msg, a.keyMap.Underground):
 				a.updateViewFocus(undergroundView)
 				return a, tea.Batch(cmds...)
-			}
-		case key.Matches(msg, a.keyMap.Trending):
-			if !searchInputFocused {
+			case key.Matches(msg, a.keyMap.Trending):
 				a.updateViewFocus(trendingView)
 				return a, tea.Batch(cmds...)
-			}
-		case key.Matches(msg, a.keyMap.Favorites):
-			if !searchInputFocused {
+			case key.Matches(msg, a.keyMap.Favorites):
 				a.updateViewFocus(favoritesView)
 				return a, tea.Batch(cmds...)
-			}
-		case key.Matches(msg, a.keyMap.Search):
-			if !searchInputFocused {
+			case key.Matches(msg, a.keyMap.Search):
 				a.updateViewFocus(searchView)
 				if msg.String() == "/" {
 					a.searchView.FocusInput()
@@ -164,16 +203,6 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmds = append(cmds, textinput.Blink)
 				return a, tea.Batch(cmds...)
 			}
-		}
-
-		// Exit early if in search input
-		// TODO: Find a better way to handle this
-		if searchInputFocused {
-			updateRes, cmd := a.searchView.Update(msg)
-			a.searchView = updateRes.(search.SearchView)
-			cmds = append(cmds, cmd)
-
-			return a, tea.Batch(cmds...)
 		}
 	}
 
@@ -209,6 +238,28 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (a App) View() string {
+	if a.userIdInputVisible {
+		userIdInputHeader := common.ActiveHeader()
+		headerContainer := lipgloss.NewStyle().
+			Align(lipgloss.Center).
+			MarginTop(1).
+			Render(
+				userIdInputHeader.Render("User ID Input"),
+			)
+
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			headerContainer,
+			common.BorderContainer().
+				BorderForeground(common.Primary).
+				Width(32).
+				Padding(0, 2).
+				Render(
+					a.userIdInput.View(),
+				),
+		)
+	}
+
 	var mainView tea.Model
 
 	trendingHeader := common.Header().MarginLeft(1)

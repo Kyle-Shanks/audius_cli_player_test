@@ -4,8 +4,9 @@ import "github.com/charmbracelet/bubbles/key"
 
 type KeyMap struct {
 	// Global keys
-	Help key.Binding
-	Quit key.Binding
+	Help              key.Binding
+	Quit              key.Binding
+	ToggleUserIdInput key.Binding
 
 	// View keys
 	Trending    key.Binding
@@ -36,7 +37,7 @@ func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.Top, k.Bottom},
 		{k.HalfPageUp, k.HalfPageDown, k.PageUp, k.PageDown},
-		{k.Search, k.Help, k.Quit},
+		{k.ToggleUserIdInput, k.Search, k.Help, k.Quit},
 	}
 }
 
@@ -97,6 +98,10 @@ var AppKeyMap = KeyMap{
 	Queue: key.NewBinding(
 		key.WithKeys("Q"),
 		key.WithHelp("Q", "queue"),
+	),
+	ToggleUserIdInput: key.NewBinding(
+		key.WithKeys("="),
+		key.WithHelp("=", "enter user id"),
 	),
 	Search: key.NewBinding(
 		key.WithKeys("S", "/"),

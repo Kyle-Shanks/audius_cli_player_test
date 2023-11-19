@@ -39,7 +39,7 @@ var PlayerKeyMap = KeyMap{
 	),
 	Pause: key.NewBinding(
 		key.WithKeys("p", " "),
-		key.WithHelp("p", "toggle pause"),
+		key.WithHelp("p/space", "toggle pause"),
 	),
 	SkipForward: key.NewBinding(
 		key.WithKeys("o"),

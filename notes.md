@@ -5,40 +5,25 @@
     - https://charm.sh/blog/commands-in-bubbletea/
 
 ## TODO
-- Think of a clean key map for all of the things
-- Set up a logging system that works better than printing to the console
-    - Something like this: https://github.com/charmbracelet/bubbletea/blob/6b77c8fc10d43195ab29e6e09f93272623ce4e9c/logging.go
-    - or this
-    ```go
-    if len(os.Getenv("DEBUG")) > 0 {
-        f, err := tea.LogToFile("debug.log", "debug")
-        if err != nil {
-            fmt.Println("fatal:", err)
-            os.Exit(1)
-        }
-        defer f.Close()
-    }
-    ```
-- Update the help text to display things for search and stuff
+- Update favorites page to display 'No User Id' if none provided
+- Update track table and track table view to update table to say 'Loading' every laod, not just first load
+- Create a text input component that has the active/inactive borders and stuff
 - Add queue methods in player
     - Just need next and prev for now
 - Update the main view names to page
-- Update the keymap system to have the player and the pages handle all of the keymapping except for quit and toggle help
 - Update the tracks table to save the column titles to dynamically get the info from the tracks
 - Write a system to add the track Id to the filename when downloading and then only deleting all of the temp files on quit
     - Also check to see if we have the track file before playing to skip downloading again
-
-## Goals
-- Way for user to save their userId for favorites
-    - Also update favorites page to display 'No User Id' if none provided
-
-## Future Goals
-- Update control scheme when more pages are added
-    - Need to also update the help text to update contextually
-- More mouse interactions when the UI is nailed down
 - Update to use the full endpoint
     - Has more sorting/filtering options and things
     - Also can update the favorites page to sort by latest added instead of whatever its doing now
+
+
+## Future Goals/Features
+- Update control scheme when more pages are added
+    - Need an intuitive set of keymaps that is easy to use
+    - Need to also update the help text to update contextually
+- More mouse interactions when the UI is nailed down
 - Work on sending messages out for tracking plays and stuff
 - Collection View
 - User Favorited Playlists

@@ -10,7 +10,7 @@ import (
 
 var (
 	tableActiveContainerStyle   = BorderContainer()
-	tableInactiveContainerStyle = BorderContainer().BorderForeground(lipgloss.Color("243"))
+	tableInactiveContainerStyle = BorderContainer().BorderForeground(Inactive)
 )
 
 var DefaultTracksTableColumns = []table.Column{
@@ -49,7 +49,7 @@ func NewTracksTable(
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(true)
-	s.Selected = s.Selected.Bold(false).Foreground(lipgloss.Color("#FFFFFF"))
+	s.Selected = s.Selected.Bold(false).Foreground(White)
 	t.SetStyles(s)
 
 	tt := TracksTable{table: t, isLoading: false, focused: false, onSelect: onSelect}
@@ -128,7 +128,7 @@ func (tt *TracksTable) Blur() {
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(true)
-	s.Selected = s.Selected.Bold(false).Foreground(lipgloss.Color("#FFFFFF"))
+	s.Selected = s.Selected.Bold(false).Foreground(White)
 	tt.table.SetStyles(s)
 }
 

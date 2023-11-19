@@ -14,7 +14,7 @@ import (
 
 var (
 	containerStyle         = common.BorderContainer().Padding(0, 2)
-	inactiveContainerStyle = containerStyle.Copy().BorderForeground(lipgloss.Color("243"))
+	inactiveContainerStyle = containerStyle.Copy().BorderForeground(common.Inactive)
 )
 
 type FetchTrackMp3ResMsg struct {
@@ -154,7 +154,7 @@ func (p Player) View() string {
 			lipgloss.NewStyle().Bold(true).Render(
 				common.RemoveEmojis(p.currentTrack.Title),
 			),
-			lipgloss.NewStyle().Foreground(lipgloss.Color("#929292")).Render(
+			lipgloss.NewStyle().Foreground(common.Grey4).Render(
 				" - "+common.RemoveEmojis(p.currentTrack.User.Name),
 			),
 		)
@@ -169,19 +169,19 @@ func (p Player) View() string {
 	if p.repeat {
 		repeatText = lipgloss.NewStyle().Foreground(lipgloss.Color("#77F")).Render("repeat")
 	} else {
-		repeatText = lipgloss.NewStyle().Foreground(lipgloss.Color("#777")).Render("repeat")
+		repeatText = lipgloss.NewStyle().Foreground(common.Grey3).Render("repeat")
 	}
 
 	if p.paused {
 		pauseText = lipgloss.NewStyle().Foreground(lipgloss.Color("#7F7")).Render("pause")
 	} else {
-		pauseText = lipgloss.NewStyle().Foreground(lipgloss.Color("#777")).Render("pause")
+		pauseText = lipgloss.NewStyle().Foreground(common.Grey3).Render("pause")
 	}
 
 	if p.muted {
 		muteText = lipgloss.NewStyle().Foreground(lipgloss.Color("#F77")).Render("mute")
 	} else {
-		muteText = lipgloss.NewStyle().Foreground(lipgloss.Color("#777")).Render("mute")
+		muteText = lipgloss.NewStyle().Foreground(common.Grey3).Render("mute")
 	}
 
 	return containerStyle.Width(100).AlignHorizontal(lipgloss.Center).Render(
@@ -194,7 +194,7 @@ func (p Player) View() string {
 				lipgloss.NewStyle().Width(32).Align(lipgloss.Left).Render(
 					common.GetDurationText(int(p.currentPos*float64(p.currentTrack.Duration))),
 				),
-				lipgloss.NewStyle().Width(32).Align(lipgloss.Center).Foreground(lipgloss.Color("#FFF")).Render(
+				lipgloss.NewStyle().Width(32).Align(lipgloss.Center).Foreground(common.White).Render(
 					fmt.Sprintf("%v  %v  %v", repeatText, pauseText, muteText),
 				),
 				lipgloss.NewStyle().Width(32).Align(lipgloss.Right).Render(

@@ -20,12 +20,13 @@ type errMsg struct{ error }
 
 func (e errMsg) Error() string { return e.error.Error() }
 
-func (tt *TracksTableView) fetchTracksCmd() tea.Cmd {
+func (tt *TracksTableView) FetchTracksCmd() tea.Cmd {
 	return func() tea.Msg {
 		tracks, err := tt.fetchTracks()
 
 		if err != nil {
-			return errMsg{err}
+			// return errMsg{err}
+			return LogCmd(err.Error())
 		}
 
 		return tracksResponseMsg{
@@ -56,7 +57,7 @@ func NewTracksTableView(viewTitle string, fetchTracks func() ([]Track, error)) T
 }
 
 func (tt TracksTableView) Init() tea.Cmd {
-	return tt.fetchTracksCmd()
+	return tt.FetchTracksCmd()
 }
 
 func (tt TracksTableView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
