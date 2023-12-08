@@ -3,7 +3,14 @@ package common
 import (
 	"fmt"
 	"math"
+	"os"
+	"path/filepath"
 )
+
+func GetDataPath() string {
+	var cachePath, _ = os.UserCacheDir()
+	return filepath.Join(cachePath, "audius_cli_player_test")
+}
 
 func GetDurationText(len int) string {
 	hourNum := len / 3600

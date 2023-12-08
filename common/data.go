@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 )
 
 var AppDataManager = NewDataManger()
@@ -20,7 +21,7 @@ type DataManager struct {
 
 func NewDataManger() DataManager {
 	return DataManager{
-		path: "data.json",
+		path: filepath.Join(GetDataPath(), "data.json"),
 	}
 }
 

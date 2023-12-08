@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -35,7 +36,7 @@ func PlayTracksCmd(tracks []Track, pos int) tea.Cmd {
 
 func LogCmd(log string) tea.Cmd {
 	return func() tea.Msg {
-		f, err := tea.LogToFile("./debug.log", "debug")
+		f, err := tea.LogToFile(filepath.Join(GetDataPath(), "debug.log"), "debug")
 
 		if err != nil {
 			fmt.Println("fatal:", err)

@@ -105,6 +105,9 @@ func NewApp() App {
 }
 
 func (a App) Init() tea.Cmd {
+	// Create app data directory if it doesn't exist
+	var _ = os.MkdirAll(common.GetDataPath(), os.ModePerm)
+
 	// Initialize sub-models
 	return tea.Batch(
 		a.player.Init(),
