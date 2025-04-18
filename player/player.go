@@ -2,9 +2,10 @@ package player
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/Kyle-Shanks/audius_cli_player_test/api"
 	"github.com/Kyle-Shanks/audius_cli_player_test/common"
-	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/progress"
@@ -13,8 +14,7 @@ import (
 )
 
 var (
-	containerStyle         = common.BorderContainer().Padding(0, 2)
-	inactiveContainerStyle = containerStyle.Copy().BorderForeground(common.Inactive)
+	containerStyle = common.BorderContainer().Padding(0, 2)
 )
 
 type FetchTrackMp3ResMsg struct {
