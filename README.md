@@ -34,7 +34,7 @@ audius_cli_player_test
 - ❤️ **Favorites [F]**
   ![Favorites View](dist/img/favorites_img.png)
   - All your favorites in one place
-  - Press `=` to enter in your user ID and enable this view
+  - Press `=` to enter in your Audius handle and enable this view
 - 🔍 **Search [S]**
   ![Search View](dist/img/search_img.png)
   - Search for tracks and artists across Audius
@@ -51,7 +51,8 @@ audius_cli_player_test
   - `m` - Mute/Unmute
   - `r` - Toggle Repeat
   - `?` - Toggle help
-  - `=` - Enter User ID
+  - `/` - Search
+  - `=` - Enter User Handle
   - `Esc/q/Ctrl+C` - Quit
 
 - **List**

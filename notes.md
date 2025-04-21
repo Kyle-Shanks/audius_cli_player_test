@@ -19,6 +19,7 @@
 - Update to use the full endpoint
   - Has more sorting/filtering options and things
   - Also can update the favorites page to sort by latest added instead of whatever its doing now
+- Update the favorites page to have a loading state when a new user ID is set
 
 ## Future Goals/Features
 

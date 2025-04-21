@@ -50,9 +50,24 @@ type App struct {
 	/* App help text component */
 	help help.Model
 
-	/* Toggle input for entering user id */
-	userIdInputVisible bool
-	userIdInput        textinput.Model
+	/* Toggle input for entering user handle */
+	userHandleInputVisible bool
+	userHandleInput        textinput.Model
+}
+
+/* Get user ID from handle and save it to app data */
+func setUserIdFromHandle(handle string) tea.Cmd {
+	return func() tea.Msg {
+		user, err := api.GetUserByHandle(handle)
+		if err != nil {
+			return common.LogCmd(err.Error())
+		}
+
+		// Save the user ID to app data
+		common.AppDataManager.SetUserId(user.Id)
+
+		return nil
+	}
 }
 
 func getMyFavs() ([]common.Track, error) {
@@ -72,9 +87,9 @@ func NewApp() App {
 	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(common.Grey3)
 	h.Styles.FullKey = h.Styles.FullKey.Foreground(common.Grey3)
 
-	idInput := textinput.New()
-	idInput.Placeholder = "Enter ID"
-	idInput.Focus()
+	handleInput := textinput.New()
+	handleInput.Placeholder = "Enter Handle"
+	handleInput.Focus()
 
 	app := App{
 		view:   trendingView,
@@ -94,10 +109,10 @@ func NewApp() App {
 		queueView:  queue.NewQueueView(),
 		searchView: search.NewSearchView(),
 
-		keyMap:             AppKeyMap,
-		help:               h,
-		userIdInputVisible: false,
-		userIdInput:        idInput,
+		keyMap:                 AppKeyMap,
+		help:                   h,
+		userHandleInputVisible: false,
+		userHandleInput:        handleInput,
 	}
 	app.trendingView.Focus()
 
@@ -163,20 +178,22 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 
 			return a, tea.Batch(cmds...)
-		} else if a.userIdInputVisible {
+		} else if a.userHandleInputVisible {
 			if msg.String() == "enter" {
-				cmds = append(cmds, common.LogCmd("Setting User ID: "+a.userIdInput.Value()))
-				common.AppDataManager.SetUserId(a.userIdInput.Value())
-				a.userIdInput.Reset()
-				a.userIdInputVisible = false
+				// Log, Set the user ID, and refetch favorites
+				cmds = append(cmds, tea.Sequence(
+					common.LogCmd("Looking up user by handle: "+a.userHandleInput.Value()),
+					setUserIdFromHandle(a.userHandleInput.Value()),
+					a.favoritesView.FetchTracksCmd(),
+				))
+				a.userHandleInput.Reset()
+				a.userHandleInputVisible = false
 
-				// Refetch favorites
-				cmds = append(cmds, a.favoritesView.FetchTracksCmd())
 				a.updateViewFocus(favoritesView)
 			} else if key.Matches(msg, a.keyMap.ToggleUserIdInput) {
-				a.userIdInputVisible = false
+				a.userHandleInputVisible = false
 			} else {
-				a.userIdInput, cmd = a.userIdInput.Update(msg)
+				a.userHandleInput, cmd = a.userHandleInput.Update(msg)
 				cmds = append(cmds, cmd)
 			}
 
@@ -188,7 +205,7 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.help.ShowAll = !a.help.ShowAll
 			case key.Matches(msg, a.keyMap.ToggleUserIdInput):
 				// a.help.ShowAll = !a.help.ShowAll
-				a.userIdInputVisible = true
+				a.userHandleInputVisible = true
 			case key.Matches(msg, a.keyMap.Underground):
 				a.updateViewFocus(undergroundView)
 				return a, tea.Batch(cmds...)
@@ -241,13 +258,13 @@ func (a App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (a App) View() string {
-	if a.userIdInputVisible {
-		userIdInputHeader := common.ActiveHeader()
+	if a.userHandleInputVisible {
+		userHandleInputHeader := common.ActiveHeader()
 		headerContainer := lipgloss.NewStyle().
 			Align(lipgloss.Center).
 			MarginTop(1).
 			Render(
-				userIdInputHeader.Render("User ID Input"),
+				userHandleInputHeader.Render("User Handle Input"),
 			)
 
 		return lipgloss.JoinVertical(
@@ -258,7 +275,7 @@ func (a App) View() string {
 				Width(32).
 				Padding(0, 2).
 				Render(
-					a.userIdInput.View(),
+					a.userHandleInput.View(),
 				),
 		)
 	}

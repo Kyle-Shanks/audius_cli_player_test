@@ -2,8 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/Kyle-Shanks/audius_cli_player_test/common"
 	"strings"
+
+	"github.com/Kyle-Shanks/audius_cli_player_test/common"
 
 	// "fmt"
 	"io"
@@ -90,6 +91,20 @@ func getTrackFavorites(favoritesPath string) ([]common.TrackFavorite, error) {
 	err = json.Unmarshal([]byte(resBytes), &trackFavoritesRes)
 
 	return trackFavoritesRes.Data, err
+}
+
+/* Send get request and unmarshal user data */
+func getUser(userPath string) (common.User, error) {
+	resBytes, err := get(userPath)
+
+	if err != nil {
+		return common.User{}, err
+	}
+
+	var userRes common.UserApiResponse
+	err = json.Unmarshal([]byte(resBytes), &userRes)
+
+	return userRes.Data, err
 }
 
 // --- Get Functions ---
@@ -188,4 +203,10 @@ func GetSearchTracks(query string) ([]common.Track, error) {
 	err = json.Unmarshal([]byte(resBytes), &tracksRes)
 
 	return tracksRes.Data, err
+}
+
+// User Functions
+func GetUserByHandle(handle string) (common.User, error) {
+	path := "/users/handle/" + handle
+	return getUser(path)
 }
